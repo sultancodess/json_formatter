@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Formatter & Tree Viewer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      color: rgb(236, 89, 89);
+      padding: 15px 20px;
+      text-align: center;
+      text-shadow: #ab47bc;
+    }
+
+    footer {
+   
+      color: rgb(14, 13, 13);
+      text-align: center;
+      padding: 10px 0;
+      margin-top: auto;
+    }
+
+    footer a {
+      color: rgb(14, 14, 15);
+      text-decoration: none;
+      margin: 0 10px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #007bff;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 300px;
+      padding: 10px;
+      border: 2px solid #007bff;
+      border-radius: 5px;
+      font-family: monospace;
+      resize: vertical;
+    }
+
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .output-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .formatted-json, .tree-view {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .json-key {
+      color: #d32f2f;
+    }
+
+    .json-string {
+      color: #2e7d32;
+    }
+
+    .json-number {
+      color: #1976d2;
+    }
+
+    .json-boolean {
+      color: #ab47bc;
+    }
+
+    .json-null {
+      color: #666;
+    }
+
+    ul.tree-node {
+      list-style: none;
+    }
+
+    .tree-caret {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .tree-caret::before {
+      content: "▶";
+      display: inline-block;
+      margin-right: 6px;
+      transition: transform 0.2s;
+    }
+
+    .tree-caret-down::before {
+      transform: rotate(90deg);
+    }
+
+    .tree-nested {
+      display: none;
+      list-style: none;
+      padding-left: 20px;
+    }
+
+    .tree-active {
+      display: block;
+    }
+
+    .error {
+      color: #dc3545;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>JSON Formatter & Tree Viewer</h1>
+  </header>
+  <div class="container">
+    <div class="input-section">
+      <textarea id="json-input" placeholder="Paste your JSON here..."></textarea>
+      <div class="buttons">
+        <button onclick="formatJSON()">Format JSON</button>
+        <button onclick="clearAll()">Clear</button>
+      </div>
+      <div id="error-message" class="error" style="display: none;"></div>
+    </div>
+
+    <div class="output-section">
+      <div class="formatted-json">
+        <h2>Formatted JSON</h2>
+        <pre id="formatted-output"></pre>
+      </div>
+      <div class="tree-view">
+        <h2>Tree Structure</h2>
+        <div id="tree-output"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Developed by <a href="https://github.com/sultancodess">Sultan.codes</a></p>
+    <p>
+      <a href="https://github.com/sultancodess" target="_blank">GitHub</a> |
+      <a href="https://www.linkedin.com/in/sultan-alam436/" target="_blank">LinkedIn</a> |
+      <a href="https://x.com/Sultan_Alam_21" target="_blank">Twitter</a>
+    </p>
+  </footer>
+
+  <script>
+    function formatJSON() {
+      const input = document.getElementById('json-input').value;
+      const formattedOutput = document.getElementById('formatted-output');
+      const treeOutput = document.getElementById('tree-output');
+      const errorMessage = document.getElementById('error-message');
+
+      try {
+        const parsedJson = JSON.parse(input);
+        formattedOutput.innerHTML = syntaxHighlight(parsedJson);
+        treeOutput.innerHTML = '';
+        const treeRoot = document.createElement('ul');
+        treeRoot.classList.add('tree-node');
+        buildTree(parsedJson, treeRoot);
+        treeOutput.appendChild(treeRoot);
+        errorMessage.style.display = 'none';
+      } catch (error) {
+        errorMessage.textContent = `Invalid JSON: ${error.message}`;
+        errorMessage.style.display = 'block';
+        formattedOutput.textContent = '';
+        treeOutput.textContent = '';
+      }
+    }
+
+    function syntaxHighlight(json) {
+      if (typeof json != 'string') {
+        json = JSON.stringify(json, null, 2);
+      }
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        function (match) {
+          let cls = 'json-number';
+          if (/^"/.test(match)) {
+            cls = /:$/.test(match) ? 'json-key' : 'json-string';
+          } else if (/true|false/.test(match)) {
+            cls = 'json-boolean';
+          } else if (/null/.test(match)) {
+            cls = 'json-null';
+          }
+          return `<span class="${cls}">${match}</span>`;
+        });
+    }
+
+    function buildTree(obj, parentElement) {
+      if (typeof obj === 'object' && obj !== null) {
+        for (const key in obj) {
+          if (obj.hasOwnProperty(key)) {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.classList.add('tree-caret');
+            span.textContent = key;
+
+            const childUl = document.createElement('ul');
+            childUl.classList.add('tree-nested');
+
+            if (typeof obj[key] === 'object' && obj[key] !== null) {
+              span.addEventListener('click', function () {
+                childUl.classList.toggle('tree-active');
+                span.classList.toggle('tree-caret-down');
+              });
+              buildTree(obj[key], childUl);
+            } else {
+              span.textContent = `${key}: ${obj[key]}`;
+            }
+
+            li.appendChild(span);
+            li.appendChild(childUl);
+            parentElement.appendChild(li);
+          }
+        }
+      }
+    }
+
+    function clearAll() {
+      document.getElementById('json-input').value = '';
+      document.getElementById('formatted-output').textContent = '';
+      document.getElementById('tree-output').textContent = '';
+      document.getElementById('error-message').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
